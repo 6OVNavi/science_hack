@@ -205,7 +205,7 @@ X_train, X_val, y_train, y_val = train_test_split(X, y, random_state = seed, tes
 
 from catboost import CatBoostClassifier
 params_no_its={'nan_mode': 'Min', 'eval_metric': 'F1', 'sampling_frequency': 'PerTree', 'leaf_estimation_method': 'Newton', 'grow_policy': 'SymmetricTree', 'penalties_coefficient': 1, 'boosting_type': 'Plain', 'model_shrink_mode': 'Constant', 'feature_border_type': 'GreedyLogSum',   'l2_leaf_reg': 3, 'random_strength': 1, 'rsm': 1, 'boost_from_average': False, 'model_size_reg': 0.5,  'subsample': 0.800000011920929, 'use_best_model': True, 'class_names': [-1, 1], 'depth': 6, 'posterior_sampling': False, 'border_count': 254, 'classes_count': 0, 'auto_class_weights': 'None', 'sparse_features_conflict_fraction': 0, 'leaf_estimation_backtracking': 'AnyImprovement', 'best_model_min_trees': 1, 'model_shrink_rate': 0, 'min_data_in_leaf': 1, 'loss_function': 'Logloss', 'learning_rate': 0.18095199763774872, 'score_function': 'Cosine', 'task_type': 'CPU', 'leaf_estimation_iterations': 10, 'bootstrap_type': 'MVS', 'max_leaves': 64}
-rfc = CatBoostClassifier(iterations=200,random_state = seed,eval_metric='F1')#CatBoostClassifier(**params_no_its,iterations=4,random_state=seed,)#
+'''rfc = CatBoostClassifier(iterations=200,random_state = seed,eval_metric='F1')#CatBoostClassifier(**params_no_its,iterations=4,random_state=seed,)#
 rfc.fit(X_train, y_train,eval_set=(X_val,y_val),use_best_model=True)
 print(rfc.get_all_params())
 from sklearn.metrics import f1_score
@@ -214,7 +214,10 @@ plt.bar(X_train.columns,rfc.get_feature_importance())
 plt.show()
 val_pred=rfc.predict(X_val)
 print(rfc.get_feature_importance(),list(X_train.columns))
-print(f1_score(y_val,val_pred))
+print(f1_score(y_val,val_pred))'''
+
+rfc=CatBoostClassifier(iterations=5,random_state=seed)
+rfc.fit(X,y)
 
 pred = rfc.predict(test)
 
