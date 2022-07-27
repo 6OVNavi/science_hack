@@ -36,6 +36,7 @@ test = pd.read_excel('For_check_unlabled.xlsx')
 #train=full
 #train=train.drop_duplicates()
 
+#train.Q2.replace({-1:0}, inplace=True)
 
 #train["M"]=train["M"].fillna(train["M"].median())
 #test["M"]=test["M"].fillna(test["M"].median())
@@ -210,11 +211,36 @@ X=X.drop(columns=['Event','Run'])
 ev=test['Event']
 test=test.drop(columns=['Event','Run'])
 
+from catboost import CatBoostClassifier
 
+from sklearn.model_selection import KFold
+
+kf = KFold(n_splits=4)
+
+
+preds=np.zeros(len(test))
+for train_index, test_index in kf.split(X):
+    X_train, X_val = X.values[train_index], X.values[test_index]
+    y_train, y_val = y.values[train_index], y.values[test_index]
+    rfc = CatBoostClassifier(iterations=100, random_state=seed, eval_metric='F1',learning_rate=0.5)
+    rfc.fit(X_train, y_train, eval_set=(X_val, y_val), use_best_model=True,verbose=0)
+    print(rfc.best_score_,rfc.best_iteration_)
+    pred=rfc.predict(test.values)
+    preds+=pred
+preds/=4
+
+for i,pred in enumerate(preds):
+    if pred>0:
+        preds[i]=1
+    else:
+        preds[i]=-1
+    preds[i]=int(preds[i])
+
+'''
 X_train, X_val, y_train, y_val = train_test_split(X, y, random_state = seed, test_size = 0.2)
 
-from catboost import CatBoostClassifier
-'''params_no_its={'nan_mode': 'Min', 'eval_metric': 'F1', 'sampling_frequency': 'PerTree', 'leaf_estimation_method': 'Newton', 'grow_policy': 'SymmetricTree', 'penalties_coefficient': 1, 'boosting_type': 'Plain', 'model_shrink_mode': 'Constant', 'feature_border_type': 'GreedyLogSum',   'l2_leaf_reg': 3, 'random_strength': 1, 'rsm': 1, 'boost_from_average': False, 'model_size_reg': 0.5,  'subsample': 0.800000011920929, 'use_best_model': True, 'class_names': [-1, 1], 'depth': 6, 'posterior_sampling': False, 'border_count': 254, 'classes_count': 0, 'auto_class_weights': 'None', 'sparse_features_conflict_fraction': 0, 'leaf_estimation_backtracking': 'AnyImprovement', 'best_model_min_trees': 1, 'model_shrink_rate': 0, 'min_data_in_leaf': 1, 'loss_function': 'Logloss', 'learning_rate': 0.18095199763774872, 'score_function': 'Cosine', 'task_type': 'CPU', 'leaf_estimation_iterations': 10, 'bootstrap_type': 'MVS', 'max_leaves': 64}
+
+params_no_its={'nan_mode': 'Min', 'eval_metric': 'F1', 'sampling_frequency': 'PerTree', 'leaf_estimation_method': 'Newton', 'grow_policy': 'SymmetricTree', 'penalties_coefficient': 1, 'boosting_type': 'Plain', 'model_shrink_mode': 'Constant', 'feature_border_type': 'GreedyLogSum',   'l2_leaf_reg': 3, 'random_strength': 1, 'rsm': 1, 'boost_from_average': False, 'model_size_reg': 0.5,  'subsample': 0.800000011920929, 'use_best_model': True, 'class_names': [-1, 1], 'depth': 6, 'posterior_sampling': False, 'border_count': 254, 'classes_count': 0, 'auto_class_weights': 'None', 'sparse_features_conflict_fraction': 0, 'leaf_estimation_backtracking': 'AnyImprovement', 'best_model_min_trees': 1, 'model_shrink_rate': 0, 'min_data_in_leaf': 1, 'loss_function': 'Logloss', 'learning_rate': 0.18095199763774872, 'score_function': 'Cosine', 'task_type': 'CPU', 'leaf_estimation_iterations': 10, 'bootstrap_type': 'MVS', 'max_leaves': 64}
 rfc = CatBoostClassifier(iterations=200,random_state = seed,eval_metric='F1',learning_rate=0.5)#CatBoostClassifier(**params_no_its,iterations=4,random_state=seed,)#
 rfc.fit(X_train, y_train,eval_set=(X_val,y_val),use_best_model=True)
 print(rfc.get_all_params())
@@ -226,14 +252,16 @@ val_pred=rfc.predict(X_val)
 print(rfc.get_feature_importance(),list(X_train.columns))
 print(f1_score(y_val,val_pred))'''
 
-rfc=CatBoostClassifier(iterations=5,random_state=seed)
-rfc.fit(X,y)
+#rfc=CatBoostClassifier(iterations=300,random_state=seed)
+#rfc.fit(X,y)
 
-pred = rfc.predict(test)
-print(pred)
+pred = preds#rfc.predict(test)
+#print(pred)
 result=pd.DataFrame({'Event':[],'Q2':[]})
 result['Event']=ev
 result['Q2']=pred
+result.Q2.replace({-1:'-1',
+                   1:'1'}, inplace=True)
 #result.Q2.replace({0:-1}, inplace=True)
 result.to_csv('final.csv',index=False)#0.5770318021 nothing 0.5787229071 impulse 0.5809172377 impulse+mass
 #TODO copy useless features?
