@@ -28,6 +28,13 @@ seed_everything(seed)
 
 train = pd.read_excel('For_model_labled.xlsx')
 test = pd.read_excel('For_check_unlabled.xlsx')
+full=pd.read_csv('dielectron.csv')
+
+full.columns = full.columns.str.replace('px1 ', 'px1')
+
+full=full[train.columns]
+train=full
+train=train.drop_duplicates()
 
 #train.Q2.replace({-1:0}, inplace=True)
 
@@ -79,16 +86,15 @@ train['pl2']=np.sqrt((train['py2']**2)+(train['pz2']**2))
 test['pl1']=np.sqrt((test['py1']**2)+(test['pz1']**2))
 test['pl2']=np.sqrt((test['py2']**2)+(test['pz2']**2))'''
 
+
+
 #train['m1']=(train['E1']*1000)/(931.5**2)
 #train['m2']=(train['E2']*1000)/(931.5**2)
 
 #test['m1']=(test['E1']*1000)/(931.5**2)
 #test['m2']=(test['E2']*1000)/(931.5**2)
 
-train['E1_copy']=train['E1']
-train['E2_copy']=train['E2']
-test['E1_copy']=test['E1']
-test['E2_copy']=test['E2']
+
 
 '''train['pt1_copy']=train['pt1']
 train['pt2_copy']=train['pt2']
@@ -101,12 +107,9 @@ test['pt2_copy']=test['pt2']'''
 def calc_speed(E):
     return c*(np.sqrt(1- ((electron_mass_kg*(c**2))/(E+electron_mass_kg*(c**2)))**2 ))
 
-'''train['v1']=c-calc_speed(get_joules(train['E1']*1000))
-train['v2']=c-calc_speed(get_joules(train['E2']*1000))
+''''''
 
-test['v1']=c-calc_speed(get_joules(test['E1']*1000))
-test['v2']=c-calc_speed(get_joules(test['E2']*1000))
-
+'''
 train['w1']=np.arctanh((c-train['v1'])/c)
 train['w2']=np.arctanh((c-train['v2'])/c)
 test['w1']=np.arctanh((c-test['v1'])/c)
@@ -126,18 +129,7 @@ test['momenta2_kgm_per_s']=calc_momenta(c-test['v2'])'''
 def calc_rapidity(eta,transverse):
     return eta-(np.tanh(eta)/2)*(electron_mass_kg/transverse)**2
 
-'''train['y1']=calc_rapidity(train['eta1'],get_joules(train['pt1']*1000))
-train['y2']=calc_rapidity(train['eta2'],get_joules(train['pt2']*1000))
-test['y1']=calc_rapidity(test['eta1'],get_joules(test['pt1']*1000))
-test['y2']=calc_rapidity(test['eta2'],get_joules(test['pt2']*1000))
 
-train['diff_R']=np.sqrt(((train['y1']-train['y2'])**2)+((train['phi1']-train['phi2'])**2))
-test['diff_R']=np.sqrt(((test['y1']-test['y2'])**2)+((test['phi1']-test['phi2'])**2))
-
-train['mt1']=np.sqrt((get_joules(train['pt1']*1000)**2)+electron_mass_kg**2)
-train['mt2']=np.sqrt((get_joules(train['pt2']*1000)**2)+electron_mass_kg**2)
-test['mt1']=np.sqrt((get_joules(test['pt1']*1000)**2)+electron_mass_kg**2)
-test['mt2']=np.sqrt((get_joules(test['pt2']*1000)**2)+electron_mass_kg**2)'''
 
 def calc_unstatic_mass(E,p):
     return np.sqrt( E**2 - ((p**2) * (c**2)) )/(c**2)
@@ -165,12 +157,14 @@ print(train)
 '''train=train.drop(columns=['momenta1_kgm_per_s','momenta2_kgm_per_s'])
 test=test.drop(columns=['momenta1_kgm_per_s','momenta2_kgm_per_s'])'''
 
-unimportant=['px1','px2','py1','py2','pz1','pz2','phi1','phi2']#,'w1','w2','y2']
+
+
+unimportant=['px1','px2','py1','py2','pz1','pz2']#,'w1','w2','y2']
 
 train=train.drop(columns=unimportant)
 test=test.drop(columns=unimportant)
 
-high_corr=['m1','m2','y1','eta2','M_new'] #high corr with E1,E2,eta1,y2,rest_energy
+high_corr=['y1','eta2','M_new'] #high corr with eta1,y2,rest_energy
 
 #train=train.drop(columns=high_corr)
 #test=test.drop(columns=high_corr)
@@ -193,9 +187,100 @@ for i in copy_cols:
         train[i+'_copy']=train[i]
         test[i + '_copy'] = test[i]'''
 
+'''temp=pd.concat((train,test))
+sc_vals=['Et1','Et2','M_new']
+from sklearn.preprocessing import StandardScaler
+for val in sc_vals:
+    sc=StandardScaler()
+    temp_all=np.array(temp[val].values).reshape(-1,1)
+    sc.fit(temp_all)
+    temp_tr=np.array(train[val].values).reshape(-1,1)
+    temp_te = np.array(test[val].values).reshape(-1, 1)
+    train[val]=sc.transform(temp_tr)
+    test[val] = sc.transform(temp_te)'''
+
 #plt.figure(figsize=(50, 50))
 #sns.heatmap(train.corr(), annot=True,linewidths=1)
 #plt.show()
+
+train.loc[train['E1']>600,'E1']=450
+test.loc[test['E1']>600,'E1']=450
+
+train.loc[train['pt1']>150,'pt1']=125
+test.loc[test['pt1']>150,'pt1']=125
+
+train.loc[train['eta1']<-3,'eta1']=-2.8
+test.loc[test['eta1']<-3,'eta1']=-2.8
+
+train.loc[train['E2']>450,'E2']=450
+test.loc[test['E2']>450,'E2']=450
+
+train.loc[train['pt2']>150,'pt2']=150
+test.loc[test['pt2']>150,'pt2']=150
+
+train.loc[train['eta2']<-2.5,'eta2']=-2.5
+test.loc[test['eta2']<-2.5,'eta2']=-2.5
+
+'''train.loc[train['px1']<-125,'px1']=-125
+test.loc[test['px1']<-125,'px1']=-125
+
+train.loc[train['py1']>120,'py1']=120
+test.loc[test['py1']>120,'py1']=120
+
+train.loc[train['pz1']>525,'pz1']=525
+test.loc[test['pz1']>525,'pz1']=525
+
+train.loc[train['pz1']<-480,'pz1']=-480
+test.loc[test['pz1']<-480,'pz1']=-480
+
+train.loc[train['px2']>120,'px2']=120
+test.loc[test['px2']>120,'px2']=120
+
+train.loc[train['px2']<-130,'px2']=-130
+test.loc[test['px2']<-130,'px2']=-130
+
+train.loc[train['py2']>110,'py2']=110
+test.loc[test['py2']>110,'py2']=110
+
+train.loc[train['py2']<-110,'py2']=-110
+test.loc[test['py2']<-110,'py2']=-110
+
+train.loc[train['pz2']>525,'pz2']=525
+test.loc[test['pz2']>525,'pz2']=525
+
+train.loc[train['pz2']<-480,'pz2']=-480
+test.loc[test['pz2']<-480,'pz2']=-480'''
+
+#train['ttl_E']=train['E1']+train['E2']
+#test['ttl_E']=test['E1']+test['E2']
+
+train['v1']=(c-calc_speed(get_joules(train['E1']*1000)))**2
+train['v2']=(c-calc_speed(get_joules(train['E2']*1000)))**2
+
+test['v1']=(c-calc_speed(get_joules(test['E1']*1000)))**2
+test['v2']=(c-calc_speed(get_joules(test['E2']*1000)))**2
+
+train['y1']=calc_rapidity(train['eta1'],get_joules(train['pt1']*1000))
+train['y2']=calc_rapidity(train['eta2'],get_joules(train['pt2']*1000))
+test['y1']=calc_rapidity(test['eta1'],get_joules(test['pt1']*1000))
+test['y2']=calc_rapidity(test['eta2'],get_joules(test['pt2']*1000))
+
+train['diff_R']=np.sqrt(((train['y1']-train['y2'])**2)+((train['phi1']-train['phi2'])**2))
+test['diff_R']=np.sqrt(((test['y1']-test['y2'])**2)+((test['phi1']-test['phi2'])**2))
+
+train['Et1']=np.sqrt((train['pt1']**2)+(train['M_new']**2))
+train['Et2']=np.sqrt((train['pt2']**2)+(train['M_new']**2))
+test['Et1']=np.sqrt((test['pt1']**2)+(test['M_new']**2))
+test['Et2']=np.sqrt((test['pt2']**2)+(test['M_new']**2))
+
+train['E1_copy']=train['E1']
+train['E2_copy']=train['E2']
+test['E1_copy']=test['E1']
+test['E2_copy']=test['E2']
+
+unimportant=['phi1','phi2'] #try this, or delete v or delete y to replicate 0.53979
+train=train.drop(columns=unimportant)
+test=test.drop(columns=unimportant)
 
 y = train['Q2']
 X = train.drop(columns = ['Q2'])
@@ -207,20 +292,52 @@ test=test.drop(columns=['Event','Run'])
 from catboost import CatBoostClassifier
 
 from sklearn.model_selection import KFold
-
-kf = KFold(n_splits=4)
+n_splits=4
+kf = KFold(n_splits=n_splits)
 
 
 preds=np.zeros(len(test))
+val_scr=0
+
+b = 1000.0
+S = 0.81131
+q = 0.0
+
+def shw(train):
+    for i in range(len(train.columns)-1):
+        if train.columns[i] not in cats:
+            plt.figure()
+            plt.title(train.columns[i])
+            plt.scatter(train[train.columns[i]],train['Q2'],alpha=0.1)
+            plt.show()
+cats=['Q1']
+#shw(train)
+print(train.columns)
+
+#feature_cols=['Q1','pt2','eta2','phi2','E1','E2','E2_copy','pt1','py1','M_new','eta1']
+from pytorch_tabnet.tab_model import TabNetClassifier
 for train_index, test_index in kf.split(X):
     X_train, X_val = X.values[train_index], X.values[test_index]
     y_train, y_val = y.values[train_index], y.values[test_index]
-    rfc = CatBoostClassifier(iterations=100, random_state=seed, eval_metric='F1',learning_rate=0.5)
+    rfc = CatBoostClassifier(iterations=200, random_state=seed, eval_metric='F1',learning_rate=0.5)
     rfc.fit(X_train, y_train, eval_set=(X_val, y_val), use_best_model=True,verbose=0)
     print(rfc.best_score_,rfc.best_iteration_)
+    val_scr+=rfc.best_score_['validation']['F1']
     pred=rfc.predict(test.values)
+
+
+    #preds+=pred*np.exp(b*(rfc.best_score_['validation']['F1']-0.67))
+    #q=q+np.exp(b*(rfc.best_score_['validation']['F1']-0.67))
+    #sub['Transported'] = sub1['Transported']*np.exp(b*(0.80967-S))
+    #q = q + np.exp(b*(0.80967-S))
+
     preds+=pred
-preds/=4
+    #print(rfc.get_feature_importance())
+val_scr/=n_splits
+print(val_scr)
+print(list(X.columns))
+#preds/=q
+preds/=n_splits
 
 for i,pred in enumerate(preds):
     if pred>0:
