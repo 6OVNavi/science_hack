@@ -28,13 +28,6 @@ seed_everything(seed)
 
 train = pd.read_excel('For_model_labled.xlsx')
 test = pd.read_excel('For_check_unlabled.xlsx')
-full=pd.read_csv('dielectron.csv')
-
-full.columns = full.columns.str.replace('px1 ', 'px1')
-
-full=full[train.columns]
-train=full
-train=train.drop_duplicates()
 
 #train.Q2.replace({-1:0}, inplace=True)
 
